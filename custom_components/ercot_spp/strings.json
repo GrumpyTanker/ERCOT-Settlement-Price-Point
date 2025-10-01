@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ERCOT Real-Time SPP Setup",
+        "description": "Configure your ERCOT pricing zone and sellback settings",
+        "data": {
+          "zone": "ERCOT Pricing Zone",
+          "export_entity": "Grid Export Energy Sensor",
+          "buyback_provider": "Buyback Rate Provider",
+          "custom_percent": "Custom Percentage"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to ERCOT",
+      "invalid_zone": "Invalid zone selected",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This zone is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ERCOT SPP Options",
+        "description": "Update your sellback settings",
+        "data": {
+          "export_entity": "Grid Export Energy Sensor",
+          "buyback_provider": "Buyback Rate Provider",
+          "custom_percent": "Custom Percentage"
+        }
+      }
+    }
+  }
+}

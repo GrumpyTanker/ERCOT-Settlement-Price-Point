@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ERCOT Real-Time SPP Setup",
+        "description": "Configure your ERCOT pricing zone and sellback settings",
+        "data": {
+          "zone": "ERCOT Pricing Zone",
+          "export_entity": "Grid Export Energy Sensor",
+          "buyback_provider": "Buyback Rate Provider",
+          "custom_percent": "Custom Percentage"
+        }
+      }
+    }
+  }
+}
