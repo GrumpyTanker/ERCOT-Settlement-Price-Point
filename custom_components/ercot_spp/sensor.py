@@ -295,49 +295,11 @@ class ERCOTEarningsSensor(ERCOTBaseSensor):
         # Update the entity state in Home Assistant
         self.async_write_ha_state()
     
+
     @property
     def native_value(self):
         """Return total earnings."""
         return round(self._total, 2)
-"""ERCOT SPP Sensor Platform."""
-from __future__ import annotations
-
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfEnergy, CURRENCY_DOLLAR
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
-from .const import DOMAIN
-
-
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up ERCOT SPP sensors."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    
-    sensors = [
-        ERCOTPriceSensor(coordinator, entry),
-        ERCOTTimestampSensor(coordinator, entry),
-        ERCOTPriceCentsKwhSensor(coordinator, entry),
-        ERCOTSellbackRateSensor(coordinator, entry),
-        ERCOTSellbackCentsSensor(coordinator, entry),
-    ]
-    
-    # Add earnings sensor if export entity configured
-    if coordinator.export_entity:
-        sensors.append(ERCOTEarningsSensor(coordinator, entry))
-    
-    async_add_entities(sensors)
 
 
 class ERCOTBaseSensor(CoordinatorEntity, SensorEntity):

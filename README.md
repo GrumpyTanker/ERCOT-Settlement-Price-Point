@@ -27,7 +27,7 @@ Track live Settlement Point Prices (SPP) and calculate your solar/battery sellba
 
 1. Open HACS in Home Assistant
 2. Click the 3 dots in the top right → Custom repositories
-3. Add this repository URL: `https://github.com/yourusername/hass-ercot-spp`
+3. Add this repository URL: `https://github.com/GrumpyTanker/ERCOT-Settlement-Price-Point`
 4. Category: Integration
 5. Click "Add"
 6. Search for "ERCOT" and click Download
@@ -258,14 +258,14 @@ Price data is provided as-is from ERCOT's public website. For official pricing a
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/hass-ercot-spp/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/hass-ercot-spp/discussions)
+- **Issues**: [GitHub Issues](https://github.com/GrumpyTanker/ERCOT-Settlement-Price-Point/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/GrumpyTanker/ERCOT-Settlement-Price-Point/discussions)
 - **Home Assistant Community**: [Forum Thread](https://community.home-assistant.io)
 
 ---
 
 ## Credits
 
-Created by [Your Name]
+Created by [GrumpyTanker]
 
 Special thanks to the Home Assistant community and ERCOT for providing public data access.
