@@ -9,7 +9,7 @@
 # - Platform loading (sensors)
 # - Web scraping logic for ERCOT price data
 #
-# Author: Your Name
+# Author: GrumpyTanker
 # License: MIT
 # ============================================================
 

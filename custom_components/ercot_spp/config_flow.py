@@ -15,7 +15,7 @@
 # 3. Buyback Rate Provider (Tesla Electric 90%, Full Rate 100%, or Custom)
 # 4. Custom Percentage (only visible if Custom selected)
 #
-# Author: Your Name
+# Author: GrumpyTanker
 # License: MIT
 # ============================================================
 

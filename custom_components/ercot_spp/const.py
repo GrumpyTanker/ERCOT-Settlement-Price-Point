@@ -4,7 +4,7 @@
 # This file contains all constant values used throughout the integration.
 # Keeping constants in one place makes them easier to maintain and update.
 #
-# Author: Your Name
+# Author: GrumpyTanker
 # License: MIT
 # ============================================================
 

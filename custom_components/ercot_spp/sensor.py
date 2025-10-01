@@ -11,7 +11,7 @@
 # 5. Sellback Rate (¢/kWh) - Same as above in cents
 # 6. Sellback Earnings - Lifetime earnings from exports (optional)
 #
-# Author: Your Name
+# Author: GrumpyTanker
 # License: MIT
 # ============================================================
 
