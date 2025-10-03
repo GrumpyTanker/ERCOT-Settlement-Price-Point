@@ -3,6 +3,9 @@
 # ============================================================
 # Defines all sensor entities for the ERCOT integration
 #
+# This module creates Home Assistant sensor entities that display
+# ERCOT pricing data in various formats for user convenience.
+#
 # Sensors created:
 # 1. Price ($/MWh) - Raw ERCOT settlement point price
 # 2. Price (¢/kWh) - Price converted to cents per kilowatt-hour
@@ -11,11 +14,29 @@
 # 5. Sellback Rate (¢/kWh) - Same as above in cents
 # 6. Sellback Earnings - Lifetime earnings from exports (optional)
 #
+# Architecture:
+# - Base class (ERCOTBaseSensor) provides common functionality
+# - Individual sensor classes inherit from base class
+# - All sensors are grouped under one device in HA UI
+# - Sensors automatically update when coordinator fetches new data
+#
+# For AI Agents:
+# - To add a new sensor, create a class inheriting from ERCOTBaseSensor
+# - Define unique_id, name, unit, state_class, and icon
+# - Implement native_value property to return data from coordinator
+# - Add sensor to list in async_setup_entry()
+#
 # Author: GrumpyTanker
 # License: MIT
+# Repository: https://github.com/GrumpyTanker/ERCOT-Settlement-Price-Point
 # ============================================================
 
-"""ERCOT SPP Sensor Platform."""
+"""ERCOT SPP Sensor Platform.
+
+This module defines all sensor entities for displaying ERCOT electricity
+pricing data in Home Assistant. Sensors are created through the platform
+setup function and automatically receive updates from the data coordinator.
+"""
 from __future__ import annotations
 
 from homeassistant.components.sensor import (
@@ -30,7 +51,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, MWH_TO_KWH, DOLLARS_TO_CENTS
 
 
 # ============================================================
@@ -171,10 +192,16 @@ class ERCOTPriceCentsKwhSensor(ERCOTBaseSensor):
     
     @property
     def native_value(self):
-        """Calculate and return price in cents/kWh."""
+        """Calculate and return price in cents/kWh.
+        
+        Conversion formula:
+        $/MWh → $/kWh (divide by 1000) → ¢/kWh (multiply by 100)
+        
+        Example: $14.72/MWh = $0.01472/kWh = 1.472 ¢/kWh
+        """
         price_mwh = self.coordinator.data.get("price_mwh", 0)
         # Convert: $/MWh → $/kWh → ¢/kWh
-        return round((price_mwh / 1000.0) * 100, 2)
+        return round((price_mwh / MWH_TO_KWH) * DOLLARS_TO_CENTS, 2)
 
 
 class ERCOTSellbackRateSensor(ERCOTBaseSensor):
@@ -198,11 +225,17 @@ class ERCOTSellbackRateSensor(ERCOTBaseSensor):
     
     @property
     def native_value(self):
-        """Calculate sellback rate in $/kWh."""
+        """Calculate sellback rate in $/kWh.
+        
+        Formula: (SPP_$/MWh ÷ 1000) × (sellback_percent ÷ 100)
+        
+        Example for Tesla Electric (90%):
+        $14.72/MWh × 0.90 = $13.248/MWh = $0.013248/kWh
+        """
         price_mwh = self.coordinator.data.get("price_mwh", 0)
-        percent = self.coordinator.sellback_percent / 100
+        percent = self.coordinator.sellback_percent / DOLLARS_TO_CENTS
         # Convert MWh to kWh and apply percentage
-        return round((price_mwh / 1000.0) * percent, 5)
+        return round((price_mwh / MWH_TO_KWH) * percent, 5)
 
 
 class ERCOTSellbackCentsSensor(ERCOTBaseSensor):
@@ -223,11 +256,18 @@ class ERCOTSellbackCentsSensor(ERCOTBaseSensor):
     
     @property
     def native_value(self):
-        """Calculate sellback rate in ¢/kWh."""
+        """Calculate sellback rate in ¢/kWh.
+        
+        Same calculation as sellback rate in $/kWh, but converted to cents.
+        
+        Formula: (SPP_$/MWh ÷ 1000) × (sellback_percent ÷ 100) × 100
+        
+        Example: $0.013248/kWh = 1.3248 ¢/kWh
+        """
         price_mwh = self.coordinator.data.get("price_mwh", 0)
-        percent = self.coordinator.sellback_percent / 100
-        # Convert to cents
-        return round((price_mwh / 1000.0) * percent * 100, 2)
+        percent = self.coordinator.sellback_percent / DOLLARS_TO_CENTS
+        # Convert to cents per kWh
+        return round((price_mwh / MWH_TO_KWH) * percent * DOLLARS_TO_CENTS, 2)
 
 
 class ERCOTEarningsSensor(ERCOTBaseSensor):
@@ -284,11 +324,12 @@ class ERCOTEarningsSensor(ERCOTBaseSensor):
                     delta = current_export  # Use current value as delta
                 
                 # Calculate earnings for this delta
-                price_kwh = self.coordinator.data.get("price_mwh", 0) / 1000.0
-                percent = self.coordinator.sellback_percent / 100
+                # Formula: delta_kWh × (SPP_$/MWh ÷ 1000) × (sellback_% ÷ 100)
+                price_kwh = self.coordinator.data.get("price_mwh", 0) / MWH_TO_KWH
+                percent = self.coordinator.sellback_percent / DOLLARS_TO_CENTS
                 rate = price_kwh * percent
                 
-                # Add to total
+                # Add to total earnings
                 self._total += delta * rate
                 self._last_export = current_export
         
