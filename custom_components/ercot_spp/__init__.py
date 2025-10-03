@@ -4,16 +4,42 @@
 # Main integration initialization file
 #
 # This file handles:
-# - Integration setup and teardown
-# - Data coordinator initialization
+# - Integration setup and teardown (async_setup_entry, async_unload_entry)
+# - Data coordinator initialization (ERCOTDataUpdateCoordinator)
 # - Platform loading (sensors)
 # - Web scraping logic for ERCOT price data
 #
+# Data Flow:
+# 1. Config entry created via config_flow.py
+# 2. async_setup_entry() creates coordinator
+# 3. Coordinator fetches data every 5 minutes from ERCOT website
+# 4. Sensors (sensor.py) display data from coordinator
+#
+# Web Scraping Details:
+# - Target URL: https://www.ercot.com/content/cdr/html/real_time_spp.html
+# - Method: HTML table parsing using regex
+# - Update frequency: Every 5 minutes
+# - Data format: Last 17 cells = [date, time, 15 price zones]
+#
+# For AI Agents:
+# - All data fetching logic is in ERCOTDataUpdateCoordinator._async_update_data()
+# - Zone mapping is in zone_map dictionary (line ~179)
+# - To add zones: update zone_map, const.py, and config_flow.py
+# - Error handling uses Home Assistant's coordinator pattern
+#
 # Author: GrumpyTanker
 # License: MIT
+# Repository: https://github.com/GrumpyTanker/ERCOT-Settlement-Price-Point
 # ============================================================
 
-"""ERCOT Real-Time Settlement Point Prices Integration."""
+"""ERCOT Real-Time Settlement Point Prices Integration.
+
+This integration provides real-time electricity pricing data from ERCOT
+(Electric Reliability Council of Texas) for Home Assistant users.
+
+The integration scrapes ERCOT's public Settlement Point Price (SPP) data
+and creates sensors for price tracking and solar/battery sellback calculations.
+"""
 from __future__ import annotations
 
 import logging
@@ -24,7 +50,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN
+from .const import DOMAIN, ERCOT_DATA_URL, DEFAULT_UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,7 +151,8 @@ class ERCOTDataUpdateCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=5),  # Update every 5 minutes
+            # Update every 5 minutes to match ERCOT's data publication frequency
+            update_interval=timedelta(minutes=DEFAULT_UPDATE_INTERVAL),
         )
     
     async def _async_update_data(self):
@@ -142,26 +169,38 @@ class ERCOTDataUpdateCoordinator(DataUpdateCoordinator):
         import aiohttp
         import re
         
-        # ERCOT's real-time SPP page URL
-        url = "https://www.ercot.com/content/cdr/html/real_time_spp.html"
-        
-        # Fetch the HTML page
+        # --------------------------------------------------------
+        # Fetch HTML from ERCOT website
+        # --------------------------------------------------------
+        # ERCOT publishes real-time Settlement Point Prices (SPP) as an HTML table
+        # Updated approximately every 5 minutes with 15-minute interval prices
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
+            async with session.get(ERCOT_DATA_URL) as response:
                 html = await response.text()
         
         # --------------------------------------------------------
         # Extract timestamp (e.g., "Oct 01, 2025 10:17")
         # --------------------------------------------------------
+        # The ERCOT page includes a "Last Updated:" text followed by timestamp
+        # Regex pattern: Look for text after "Last Updated: " until < or newline
         timestamp_match = re.search(r'Last Updated: ([^<\n]+)', html)
         timestamp = timestamp_match.group(1) if timestamp_match else None
         
         # --------------------------------------------------------
         # Extract all table cells from the HTML
-        # Pattern matches: <td>VALUE</td>
         # --------------------------------------------------------
+        # Regex pattern breakdown:
+        # - <td[^>]*>  : Matches opening <td> tag with any attributes
+        # - ([^<]+)    : Captures text content (anything except <)
+        # - </td>      : Matches closing tag
+        # - re.IGNORECASE : Case-insensitive matching
+        #
+        # This extracts all cell values from the HTML table.
+        # The table contains multiple rows of historical prices.
         cells = re.findall(r'<td[^>]*>([^<]+)</td>', html, re.IGNORECASE)
         
+        # Validate we have enough data
+        # Minimum 17 cells needed: 1 date + 1 time + 15 price zones
         if len(cells) < 17:
             raise Exception("Not enough data cells found in ERCOT table")
         
@@ -173,9 +212,18 @@ class ERCOTDataUpdateCoordinator(DataUpdateCoordinator):
         
         # --------------------------------------------------------
         # Map zone names to column positions (0-indexed)
-        # Position 0 = Date, Position 1 = Time
-        # Prices start at position 2
         # --------------------------------------------------------
+        # Each row in the ERCOT table has 17 columns:
+        # [0] = Date (MM/DD/YYYY)
+        # [1] = Time (HHMM format, e.g., "1015" = 10:15 AM)
+        # [2-16] = Price zones (15 total)
+        #
+        # Column order matches ERCOT's official table structure.
+        # IMPORTANT: This mapping must match the actual column order on ERCOT website.
+        # If ERCOT changes their table structure, this map needs updating.
+        #
+        # For AI Agents: When adding new zones, update this map, const.py ZONES list,
+        # and config_flow.py dropdown options.
         zone_map = {
             "HB_BUSAVG": 2,    # Hub Bus Average
             "HB_HOUSTON": 3,   # Houston Hub
@@ -188,14 +236,15 @@ class ERCOTDataUpdateCoordinator(DataUpdateCoordinator):
             "LZ_CPS": 10,      # CPS Energy Load Zone
             "LZ_HOUSTON": 11,  # Houston Load Zone
             "LZ_LCRA": 12,     # LCRA Load Zone
-            "LZ_NORTH": 13,    # North Load Zone (most common)
+            "LZ_NORTH": 13,    # North Load Zone (most common residential)
             "LZ_RAYBN": 14,    # Rayburn Load Zone
             "LZ_SOUTH": 15,    # South Load Zone
             "LZ_WEST": 16,     # West Load Zone
         }
         
         # Get the column index for the configured zone
-        col_idx = zone_map.get(self.zone, 13)  # Default to LZ_NORTH
+        # Falls back to LZ_NORTH (column 13) if zone not found
+        col_idx = zone_map.get(self.zone, 13)
         
         # Extract and convert price to float
         price = float(last_row[col_idx])

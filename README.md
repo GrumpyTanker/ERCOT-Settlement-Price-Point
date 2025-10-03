@@ -269,3 +269,89 @@ Price data is provided as-is from ERCOT's public website. For official pricing a
 Created by [GrumpyTanker]
 
 Special thanks to the Home Assistant community and ERCOT for providing public data access.
+
+---
+
+## For Developers & AI Agents
+
+### Project Structure
+
+This integration follows Home Assistant's standard custom component architecture:
+
+- **`__init__.py`** - Main integration file, data coordinator, web scraping logic
+- **`sensor.py`** - Sensor platform with 6 sensor entities
+- **`config_flow.py`** - UI configuration and options flow
+- **`const.py`** - Constants and zone definitions
+- **`manifest.json`** - Integration metadata
+- **`strings.json`** - UI text strings
+- **`translations/en.json`** - Localization
+
+### Key Components
+
+#### Data Coordinator
+Located in `__init__.py`, the `ERCOTDataUpdateCoordinator` class:
+- Fetches data every 5 minutes from ERCOT website
+- Uses HTML scraping with regex patterns
+- Parses 17-column table (date, time, 15 price zones)
+- Distributes data to all sensor entities
+
+#### Sensors
+Located in `sensor.py`, six sensor types:
+1. Price ($/MWh) - Raw ERCOT price
+2. Price (¢/kWh) - Consumer-friendly units
+3. Last Updated - Timestamp
+4. Sellback Rate ($/kWh) - Export rate
+5. Sellback Rate (¢/kWh) - Export rate in cents
+6. Sellback Earnings - Lifetime total (optional)
+
+#### Zone Mapping
+Zones are defined in three locations (must be kept in sync):
+- `const.py` - ZONES list
+- `__init__.py` - zone_map dictionary (column indices)
+- `config_flow.py` - Dropdown selector options
+
+### Development Guidelines
+
+- **Code Style**: Follow Home Assistant's development guidelines
+- **Type Hints**: All functions use Python type annotations
+- **Async/Await**: All I/O operations are asynchronous
+- **Error Handling**: Use try/except with appropriate logging
+- **Documentation**: Comprehensive docstrings and inline comments
+- **Testing**: Manually test with different zones and configurations
+
+### Adding New Features
+
+**Adding a New Zone:**
+1. Update `const.py` ZONES list
+2. Update `__init__.py` zone_map dictionary
+3. Update `config_flow.py` dropdown options
+4. Update README.md zone documentation
+
+**Adding a New Sensor:**
+1. Create class in `sensor.py` inheriting from `ERCOTBaseSensor`
+2. Define unique_id, name, unit, state_class, icon
+3. Implement `native_value` property
+4. Add to sensor list in `async_setup_entry()`
+
+**Modifying Data Fetch:**
+- All scraping logic in `ERCOTDataUpdateCoordinator._async_update_data()`
+- Update regex patterns if ERCOT changes HTML structure
+- Adjust zone_map if column order changes
+
+### For AI Coding Agents
+
+This repository is prepared for GitHub Copilot and other AI coding agents:
+
+- **Comprehensive Documentation**: Detailed comments explain all complex logic
+- **Clear Architecture**: Well-organized code with consistent patterns
+- **Type Safety**: Full type hints for better code understanding
+- **Section Markers**: Code blocks clearly marked with headers
+- **Instructions**: See `.github/COPILOT_INSTRUCTIONS.md` for detailed guidance
+
+When making changes:
+- Preserve existing functionality and coding patterns
+- Update all three locations when modifying zones
+- Maintain synchronization between zone definitions
+- Test with multiple ERCOT zones
+- Update CHANGELOG.md with all changes
+- Follow Home Assistant's development standards
