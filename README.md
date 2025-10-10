@@ -240,6 +240,10 @@ Contributions are welcome! Please:
 4. Test thoroughly
 5. Submit a pull request
 
+### For Maintainers: Creating Releases
+
+See [Release Quick Start](.github/RELEASE_QUICK_START.md) for the fastest way to create a release, or [Release Process](.github/RELEASE_PROCESS.md) for detailed instructions
+
 ---
 
 ## License
