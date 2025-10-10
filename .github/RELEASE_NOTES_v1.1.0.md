@@ -171,6 +171,6 @@ Special thanks to:
 ---
 
 **Version**: 1.1.0  
-**Release Date**: 2025-01-XX  
+**Release Date**: 2025-10-10  
 **Author**: GrumpyTanker  
 **License**: MIT
